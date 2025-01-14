@@ -1,27 +1,40 @@
 #include <Arduino.h>
+#include <LowPower.h>
 
-#define OUTPUT_PIN A5            
-#define SOIL_SENSOR_ANALOG_PIN A0 
+#define SENSOR_POWER_PIN 7
+#define SOIL_SENSOR_ANALOG_PIN A0
+#define OUTPUT_PIN A5
 
 void setup() {
-  pinMode(OUTPUT_PIN, OUTPUT); 
-  Serial.begin(9600);          // Initialize serial communication at 9600 baud
+    pinMode(SENSOR_POWER_PIN, OUTPUT); 
+    pinMode(OUTPUT_PIN, OUTPUT);      
+    Serial.begin(9600);                
 }
 
 void loop() {
-  int analogValue = analogRead(SOIL_SENSOR_ANALOG_PIN);
+    // Power on the soil sensor
+    digitalWrite(SENSOR_POWER_PIN, HIGH);
+    delay(10); // Allow sensor to stabilize
 
-  Serial.print("Analog Value: ");
-  Serial.println(analogValue);
+   
+    int soilMoisture = analogRead(SOIL_SENSOR_ANALOG_PIN);
 
-  // Control the output pin based on soil moisture level
-  if (analogValue > 500) { 
-    digitalWrite(OUTPUT_PIN, HIGH);
-    Serial.println("Soil is dry! Water is needed.");
-  } else {
-    digitalWrite(OUTPUT_PIN, LOW);
-    Serial.println("Soil is moist. No watering needed.");
-  }
+    // Power off sensor
+    digitalWrite(SENSOR_POWER_PIN, LOW);
 
-  delay(5000); // 5s
+
+    Serial.print("Soil Moisture: ");
+    Serial.println(soilMoisture);
+
+    // Take action based on moisture level
+    if (soilMoisture > 500) {
+        digitalWrite(OUTPUT_PIN, HIGH); 
+        Serial.println("Soil is dry! Water is needed.");
+    } else {
+        digitalWrite(OUTPUT_PIN, LOW); 
+        Serial.println("Soil is moist. No watering needed.");
+    }
+
+    // Sleep for 8 seconds
+    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
 }
