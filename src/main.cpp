@@ -1,40 +1,64 @@
 #include <Arduino.h>
 #include <LowPower.h>
-
-#define SENSOR_POWER_PIN 7
-#define SOIL_SENSOR_ANALOG_PIN A0
-#define OUTPUT_PIN A5
+#include "IRSensor.h"
+#include "DHTSensor.h"
+#include "SoilSensor.h"
+#define LED_OUT_PIN A5
+#define BUZZER_OUT_PIN 2
 
 void setup() {
-    pinMode(SENSOR_POWER_PIN, OUTPUT); 
-    pinMode(OUTPUT_PIN, OUTPUT);      
-    Serial.begin(9600);                
+    pinMode(LED_OUT_PIN, OUTPUT);  
+    // Initialize all modules
+    initPlantDetector();
+    initDHT();
+    initSoilSensor();
+    Serial.begin(9600);
 }
 
 void loop() {
-    // Power on the soil sensor
-    digitalWrite(SENSOR_POWER_PIN, HIGH);
-    delay(10); // Allow sensor to stabilize
-
-   
-    int soilMoisture = analogRead(SOIL_SENSOR_ANALOG_PIN);
-
-    // Power off sensor
-    digitalWrite(SENSOR_POWER_PIN, LOW);
-
-
-    Serial.print("Soil Moisture: ");
-    Serial.println(soilMoisture);
-
-    // Take action based on moisture level
-    if (soilMoisture > 500) {
-        digitalWrite(OUTPUT_PIN, HIGH); 
-        Serial.println("Soil is dry! Water is needed.");
+    // Check for plant presence using the IR sensor
+    if (isPlantDetected()) {
+        delay(10); 
+        Serial.println("Plant detected!");
+           digitalWrite(LED_OUT_PIN, HIGH); 
+         delay(10); 
+        // Read temperature and humidity
+        float temperature = readTemperature();
+        float humidity = readHumidity();
+        if (!isnan(temperature) && !isnan(humidity)) {
+            Serial.print("Temperature: ");
+            Serial.print(temperature);
+            Serial.print(" °C | Humidity: ");
+            Serial.print(humidity);
+            Serial.println(" %");
+            delay(10);
+        } else {
+            Serial.println("Failed to read from DHT sensor!");
+            delay(10);
+        }
+        delay(10); 
+        // Read soil moisture
+        int soilMoisture = readSoilMoisture();
+        Serial.print("Soil Moisture: ");
+        Serial.println(soilMoisture);
+         delay(10);
+        // Take action based on soil moisture
+        if (soilMoisture > 500) {
+            Serial.println("Soil is dry! Water is needed.");
+            digitalWrite(BUZZER_OUT_PIN, HIGH); 
+             delay(10);
+        } else {
+            Serial.println("Soil is moist. No watering needed.");
+            digitalWrite(BUZZER_OUT_PIN, LOW); 
+             delay(10);
+        }
     } else {
-        digitalWrite(OUTPUT_PIN, LOW); 
-        Serial.println("Soil is moist. No watering needed.");
+        Serial.println("No plant detected! System in standby.");
+        digitalWrite(LED_OUT_PIN, LOW); 
+        delay(10);
     }
-
-    // Sleep for 8 seconds
-    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+    delay(10);
+    // Enter low-power mode for 8 seconds
+    LowPower.powerDown(SLEEP_2S, ADC_OFF, BOD_OFF);
+    delay(10);
 }
