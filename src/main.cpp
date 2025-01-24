@@ -4,10 +4,12 @@
 #include "DHTSensor.h"
 #include "SoilSensor.h"
 #define LED_OUT_PIN A5
-#define BUZZER_OUT_PIN 2
+#define BUZZER_OUT_PIN 6
 
 void setup() {
     pinMode(LED_OUT_PIN, OUTPUT);  
+    pinMode(BUZZER_OUT_PIN, OUTPUT);  
+    digitalWrite(BUZZER_OUT_PIN, LOW); 
     // Initialize all modules
     initPlantDetector();
     initDHT();
@@ -45,11 +47,12 @@ void loop() {
         // Take action based on soil moisture
         if (soilMoisture > 500) {
             Serial.println("Soil is dry! Water is needed.");
-            digitalWrite(BUZZER_OUT_PIN, HIGH); 
+             digitalWrite(BUZZER_OUT_PIN, HIGH); // Turn buzzer off
+             delay(5000); // Keep buzzer on for 5 seconds (if needed)
+            digitalWrite(BUZZER_OUT_PIN, LOW); // Turn buzzer off
              delay(10);
         } else {
             Serial.println("Soil is moist. No watering needed.");
-            digitalWrite(BUZZER_OUT_PIN, LOW); 
              delay(10);
         }
     } else {
